@@ -40,6 +40,13 @@ conda install ipykernel -y; python -m ipykernel install --user --name hood --dis
 ```
 </details>
 
+## License and Data Terms
+Our open-source code is released under the **MIT License**. 
+
+However, this project relies on external datasets and 3D models (such as **AMASS, SMPL, VTO, and HOOD data**) which are governed by their own strict academic licenses. 
+* **We do NOT redistribute these restricted assets.** * You must register and download the SMPL models, AMASS dataset, and VTO dataset strictly from their respective official websites.
+* Please ensure you strictly adhere to their official terms of use and licensing agreements. 
+
 ### Download data
 #### HOOD data
 Download the auxiliary data for HOOD using this [link](https://drive.google.com/file/d/1RdA4L6Fy50VsKZ8k7ySp5ps5YtWoHSgs/view?usp=sharing).
