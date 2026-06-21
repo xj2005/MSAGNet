@@ -113,6 +113,6 @@ You can find instructions on how to generate validation sequences and compute me
 
 评价指标.ipynb用于计算每顶点平均误差等指标.
 
-因有人构建hood_data文件夹不包含受版权保护的 SMPL 核心模型）失败,特放置hood_data文件夹如下:
+因有人构建hood_data文件夹（不包含受版权保护的 SMPL 核心模型）失败,特放置hood_data文件夹如下:
 链接: https://pan.baidu.com/s/1LjnHN6qXkH4xix1u-KJ4eg 提取码: 1234
 
