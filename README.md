@@ -1,4 +1,9 @@
-garment simulation
+# MSAGNet: Multi-Scale Attention Graph Network for Garment Simulation
+
+> Built upon [HOOD](https://github.com/isantesteban/HOOD) (Grigorev et al., CVPR 2023).
+> Our improvements: attention-based message aggregation, self-collision penalty loss,
+> and hierarchical graph with self-collision edges.
+
 ### Install conda enviroment
 We provide a conda environment file `hood.yml` to install all the dependencies. 
 You can create and activate the environment with the following commands:
@@ -40,26 +45,42 @@ conda install ipykernel -y; python -m ipykernel install --user --name hood --dis
 ```
 </details>
 
-## License and Data Terms
-Our open-source code is released under the **MIT License**. 
-
-However, this project relies on external datasets and 3D models (such as **AMASS, SMPL, VTO, and HOOD data**) which are governed by their own strict academic licenses. 
-**We do NOT redistribute these restricted assets.** You must register and download the SMPL models, AMASS dataset, and VTO dataset strictly from their respective official websites.
-Please ensure you strictly adhere to their official terms of use and licensing agreements. 
-
 ### Download data
-#### HOOD data
-Download the auxiliary data for HOOD using this [link](https://drive.google.com/file/d/1RdA4L6Fy50VsKZ8k7ySp5ps5YtWoHSgs/view?usp=sharing).
-Unpack it anywhere you want and set the `HOOD_DATA` environmental variable to the path of the unpacked folder.
-Also, set the `HOOD_PROJECT` environmental variable to the path you cloned this repository to(在inference.ipynb中设置好自己对应的路径):
+#### Data archive
+Download the pre-packaged data archive from Baidu Netdisk (see bottom of this README).
+Unpack it anywhere and set the `HOOD_DATA` environmental variable to the unpacked folder.
+Also, set the `HOOD_PROJECT` environmental variable to this repository's root:
 
 ```bash
 export HOOD_DATA=/path/to/hood_data
 export HOOD_PROJECT=/path/to/this/repository
 ```
 
+The archive includes all files listed in the directory structure below,
+**except SMPL body models** (see next section).
+
 #### SMPL models
 Download the SMPL models using this [link](https://smpl.is.tue.mpg.de/). Unpack them into the `$HOOD_DATA/aux_data/smpl` folder.
+
+#### Data redistribution note
+
+The Baidu Netdisk archive (see bottom of this README) contains all files listed in the
+directory structure above **except the SMPL body models**, which must be downloaded
+separately due to license restrictions.
+
+The archive includes:
+- Garment meshes, garment dictionary, SMPL auxiliary data, data splits,
+  pre-trained weights (including MSAGNet models `postcvpror.pth` and
+  `cvpr_submissionor.pth`), pre-converted VTO training sequences, and demo data.
+
+The following must be downloaded separately:
+
+| Resource | URL | License |
+|---|---|---|
+| SMPL body models | [smpl.is.tue.mpg.de](https://smpl.is.tue.mpg.de/) | SMPL License (non-commercial) |
+| AMASS (CMU subset) | [amass.is.tue.mpg.de](https://amass.is.tue.mpg.de/) | AMASS License |
+| VTO dataset | [github.com/isantesteban/vto-dataset](https://github.com/isantesteban/vto-dataset) | MIT |
+| Validation sequences | [Google Drive](https://drive.google.com/file/d/1jFkDWPZW2HwYsYqcXAC3hX0NlumBnqT3/view) | HOOD License |
 
 In the end your `$HOOD_DATA` folder should look like this(严格按照要求完成文件夹):
 ```
@@ -73,11 +94,15 @@ $HOOD_DATA
         |-- garment_meshes // folder with .obj meshes for garments used in HOOD
         |-- garments_dict.pkl // dictionary with garmentmeshes and their auxilliary data used for training and inference
         |-- smpl_aux.pkl // dictionary with indices of SMPL vertices that correspond to hands, used to disable hands during inference to avoid body self-intersections
-    |-- trained_models // directory with trained HOOD models
-        |-- cvpr_submission.pth // model used in the CVPR paper
-        |-- postcvpr.pth // model trained with refactored code with several bug fixes after the CVPR submission
-        |-- fine15.pth // baseline model without denoted as "Fine15" in the paper (15 message-passing steps, no long-range edges)
-        |-- fine48.pth // baseline model without denoted as "Fine48" in the paper (48 message-passing steps, no long-range edges)
+    |-- trained_models // directory with trained models
+        |-- cvpr_submission.pth // HOOD CVPR model (baseline)
+        |-- postcvpr.pth // HOOD post-CVPR model (baseline)
+        |-- fine15.pth // Fine15 baseline (15 message-passing steps, no long-range edges)
+        |-- fine48.pth // Fine48 baseline (48 message-passing steps, no long-range edges)
+        |-- postcvpror.pth // MSAGNet (ours) -- with attention + self-collision loss
+        |-- cvpr_submissionor.pth // MSAGNet (ours) -- CVPR-configuration variant
+        |-- fromanypose // demo data for inference from arbitrary pose
+        |-- temp // pre-packaged AMASS demo sequences
 ```
 
 ## Inference
@@ -85,7 +110,10 @@ The jupyter notebook [Inference.ipynb](Inference.ipynb) contains an example of h
 
 It also has examples of such use-cases as adding a new garment from an .obj file and converting sequences from [AMASS](https://amass.is.tue.mpg.de/) and [VTO](https://github.com/isantesteban/vto-dataset) datasets to the format used in HOOD.
 
-To run inference starting from arbitrary garment pose and arbitrary mesh sequence refer to the [InferenceFromMeshSequence.ipynb](InferenceFromMeshSequence.ipynb) notebook.  
+To run inference starting from arbitrary garment pose and arbitrary mesh sequence refer to the [InferenceFromMeshSequence.ipynb](InferenceFromMeshSequence.ipynb) notebook.
+
+To use our MSAGNet model instead of the HOOD baseline, change the checkpoint path
+in the notebook to `trained_models/postcvpror.pth`.  
 
 ## Training
 To train a new HOOD model from scratch, you need to first download the [VTO](https://github.com/isantesteban/vto-dataset) dataset and convert it to our format.
@@ -98,21 +126,46 @@ using [this link](https://drive.google.com/file/d/1jFkDWPZW2HwYsYqcXAC3hX0NlumBn
 
 You can find instructions on how to generate validation sequences and compute metrics over them in the [ValidationSequences.ipynb](ValidationSequences.ipynb) notebook.
 
-## 效果展示图
-![image](https://github.com/JUNOHINATA/MSAGNet/blob/main/sample2.png)
-![image](https://github.com/JUNOHINATA/MSAGNet/blob/main/sample3.png)
-![image](https://github.com/JUNOHINATA/MSAGNet/blob/main/sample4.png)
-![image](https://github.com/JUNOHINATA/MSAGNet/blob/main/sample5.png)
+## Qualitative results
 
-## 说明
-根据inference.ipynb中的指示推理模型(请注意最好使用命令行进行渲染而不要使用改文件中的代码进行渲染).
+![sample1](sample2.png)
+![sample2](sample3.png)
+![sample3](sample4.png)
+![sample4](sample5.png)
 
-如要自行生成结果请将生成的pkl文件分解为服装模型和人体模型,再使用如blender等工具进行自定义渲染.
+Run `Inference.ipynb` with the provided weights, then render with `utils/show.py` or Blender.
 
-根目录下的collision_penalty.py是修改后碰撞损失函数.
+## What's included
 
-评价指标.ipynb用于计算每顶点平均误差等指标.
+**Model weights:** Pre-trained weights are provided in `trained_models/`,
+including `postcvpror.pth` and `cvpr_submissionor.pth`.
 
-因有人构建hood_data文件夹（不包含受版权保护的 SMPL 核心模型）失败,特放置hood_data文件夹如下:
-链接: https://pan.baidu.com/s/1LjnHN6qXkH4xix1u-KJ4eg 提取码: 1234
+**Collision loss:** A modified collision loss with external penetration and
+self-collision penalty terms is implemented in `collision_penalty.py`.
+See commented sections for the self-collision formulation.
+
+**Evaluation:** `评价指标.ipynb` provides per-vertex MPVE and collision count
+computation between OBJ meshes.
+
+## Reproducing results
+
+| Paper result | Corresponding file |
+|---|---|
+| Table 1 (collision metrics) | `评价指标.ipynb` |
+| Table 2 (MPVE) | `评价指标.ipynb` |
+| Fig 4–7 (qualitative) | `Inference.ipynb` + `utils/show.py` |
+| Ablation (Fine15/48) | `configs/cvpr_baselines/` |
+
+**Qualitative results:** Run `Inference.ipynb` with the provided weights,
+then render with `utils/show.py` or Blender.
+
+**Quantitative evaluation:** Use `评价指标.ipynb` to compute per-vertex error
+and collision metrics between generated and reference meshes.
+
+**Ablation baselines:** Configurations in `configs/cvpr_baselines/`.
+
+## Baidu Netdisk
+
+https://pan.baidu.com/s/1aMCNoQaf6KKxgByDstuM5w  (提取码: 5r9h)
+
 
