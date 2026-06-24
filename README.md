@@ -70,8 +70,8 @@ separately due to license restrictions.
 
 The archive includes:
 - Garment meshes, garment dictionary, SMPL auxiliary data, data splits,
-  pre-trained weights (including MSAGNet models `postcvpror.pth` and
-  `cvpr_submissionor.pth`), pre-converted VTO training sequences, and demo data.
+  pre-trained weights (including MSAGNet models `cvpr_submission.pth` and
+  `postcvpr.pth`), pre-converted VTO training sequences, and demo data.
 
 The following must be downloaded separately:
 
@@ -95,12 +95,12 @@ $HOOD_DATA
         |-- garments_dict.pkl // dictionary with garmentmeshes and their auxilliary data used for training and inference
         |-- smpl_aux.pkl // dictionary with indices of SMPL vertices that correspond to hands, used to disable hands during inference to avoid body self-intersections
     |-- trained_models // directory with trained models
-        |-- cvpr_submission.pth // HOOD CVPR model (baseline)
-        |-- postcvpr.pth // HOOD post-CVPR model (baseline)
+        |-- cvpr_submissionor.pth // HOOD CVPR model (baseline)
+        |-- postcvpror.pth // HOOD post-CVPR model (baseline)
         |-- fine15.pth // Fine15 baseline (15 message-passing steps, no long-range edges)
         |-- fine48.pth // Fine48 baseline (48 message-passing steps, no long-range edges)
-        |-- postcvpror.pth // MSAGNet (ours) -- with attention + self-collision loss
-        |-- cvpr_submissionor.pth // MSAGNet (ours) -- CVPR-configuration variant
+        |-- cvpr_submission.pth // MSAGNet (ours) -- CVPR architecture
+        |-- postcvpr.pth // MSAGNet (ours) -- post-CVPR architecture
         |-- fromanypose // demo data for inference from arbitrary pose
         |-- temp // pre-packaged AMASS demo sequences
 ```
@@ -113,7 +113,7 @@ It also has examples of such use-cases as adding a new garment from an .obj file
 To run inference starting from arbitrary garment pose and arbitrary mesh sequence refer to the [InferenceFromMeshSequence.ipynb](InferenceFromMeshSequence.ipynb) notebook.
 
 To use our MSAGNet model instead of the HOOD baseline, change the checkpoint path
-in the notebook to `trained_models/postcvpror.pth`.  
+in the notebook to `trained_models/postcvpr.pth`.  
 
 ## Training
 To train a new HOOD model from scratch, you need to first download the [VTO](https://github.com/isantesteban/vto-dataset) dataset and convert it to our format.
@@ -138,7 +138,7 @@ Run `Inference.ipynb` with the provided weights, then render with `utils/show.py
 ## What's included
 
 **Model weights:** Pre-trained weights are provided in `trained_models/`,
-including `postcvpror.pth` and `cvpr_submissionor.pth`.
+including MSAGNet models `cvpr_submission.pth` and `postcvpr.pth`.
 
 **Collision loss:** A modified collision loss with external penetration and
 self-collision penalty terms is implemented in `collision_penalty.py`.
