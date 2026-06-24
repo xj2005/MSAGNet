@@ -51,7 +51,8 @@ class Criterion(nn.Module):
         weight = self.weight_start + (self.weight_max - self.weight_start) * progress
         return weight
 
-    def calc_loss_prev_obstacle(self, example):
+    def _calc_external_loss(self, example):
+        """L_e: garment-body external penetration loss."""
         obstacle_pos = example['obstacle'].pos
         obstacle_prev_pos = example['obstacle'].prev_pos
         obstacle_faces = example['obstacle'].faces_batch.T
@@ -78,10 +79,38 @@ class Criterion(nn.Module):
 
         distance = ((pred_pos - nn_points) * nn_normals).sum(dim=-1)
         interpenetration = torch.maximum(self.eps - distance, torch.FloatTensor([0]).to(device))
+        loss = interpenetration.pow(3).sum(-1)
+        return loss
 
-        interpenetration = interpenetration.pow(3)
-        loss = interpenetration.sum(-1)
+    def _calc_self_loss(self, example):
+        """L_s: garment self-penetration loss."""
+        pred_pos = example['cloth'].pred_pos
+        cloth_normals = example['cloth'].normals
 
+        # KNN k=2: first neighbor is self, take second
+        _, nn_idx, _ = knn_points(pred_pos.unsqueeze(0), pred_pos.unsqueeze(0),
+                                  k=2, return_nn=True)
+        nn_idx = nn_idx[0, :, 1]
+
+        nn_pos = pred_pos[nn_idx]
+        nn_normals = cloth_normals[nn_idx]
+        device = pred_pos.device
+
+        distance = ((pred_pos - nn_pos) * nn_normals).sum(dim=-1)
+
+        # Filter mesh-adjacent vertices by Euclidean distance threshold
+        pair_dist = torch.norm(pred_pos - nn_pos, dim=-1)
+        neighbor_mask = pair_dist > self.eps
+
+        interpenetration = torch.maximum(self.eps - distance, torch.FloatTensor([0]).to(device))
+        interpenetration = interpenetration * neighbor_mask.float()
+        loss = interpenetration.pow(3).sum(-1)
+        return loss
+
+    def calc_loss_prev_obstacle(self, example):
+        external_loss = self._calc_external_loss(example)
+        self_loss = self._calc_self_loss(example)
+        loss = external_loss + self_loss
         return loss
 
     def forward(self, sample):
