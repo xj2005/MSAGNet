@@ -11,14 +11,15 @@ from models.core.base import BaseBlock
 
 
 class GraphNetBlock(BaseBlock):
-    def __init__(self, node_processor_fn, edge_processor_fn, edge_sets, latent_size):
+    def __init__(self, node_processor_fn, edge_processor_fn, edge_sets, latent_size, use_attention=True):
 
         self.edge_sets = edge_sets
         self.latent_size = latent_size
         self.edge_keys = sorted(list(set([v['edge_key'] for v in edge_sets.values()])))
         edge_processor_dict = {v['edge_key']: edge_processor_fn for v in self.edge_sets.values()}
         node_processor_dict = dict(node=node_processor_fn)
-        super().__init__(edge_processor_dict, node_processor_dict)
+        super().__init__(edge_processor_dict, node_processor_dict,
+                         use_attention=use_attention, latent_size=latent_size)
 
     def get_updated_edge_features(self, sample):
         updated_features = {}
