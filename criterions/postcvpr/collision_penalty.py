@@ -42,7 +42,8 @@ class Criterion(nn.Module):
         weight = self.weight_start + (self.weight_max - self.weight_start) * progress
         return weight
 
-    def calc_loss(self, example):
+    def _calc_external_loss(self, example):
+        """L_e: garment-body external penetration loss."""
         obstacle_next_pos = example['obstacle'].target_pos
         obstacle_curr_pos = example['obstacle'].pos
         obstacle_faces = example['obstacle'].faces_batch.T
@@ -50,13 +51,11 @@ class Criterion(nn.Module):
         curr_pos = example['cloth'].pos
         next_pos = example['cloth'].pred_pos
 
-        # Find correspondences in current step
         obstacle_face_curr_pos = gather(obstacle_curr_pos, obstacle_faces, 0, 1, 1).mean(dim=-2)
         _, nn_idx, _ = knn_points(curr_pos.unsqueeze(0), obstacle_face_curr_pos.unsqueeze(0),
                                   return_nn=True)
         nn_idx = nn_idx[0]
 
-        # Compute distances in the new step
         obstacle_face_next_pos = gather(obstacle_next_pos, obstacle_faces, 0, 1, 1).mean(dim=-2)
         obstacle_fn = self.f_normals_f(obstacle_next_pos.unsqueeze(0), obstacle_faces.unsqueeze(0))[0]
 
@@ -69,10 +68,38 @@ class Criterion(nn.Module):
 
         distance = ((next_pos - nn_points) * nn_normals).sum(dim=-1)
         interpenetration = torch.maximum(self.eps - distance, torch.FloatTensor([0]).to(device))
+        loss = interpenetration.pow(3).sum(-1)
+        return loss
 
-        interpenetration = interpenetration.pow(3)
-        loss = interpenetration.sum(-1)
+    def _calc_self_loss(self, example):
+        """L_s: garment self-penetration loss."""
+        cloth_next_pos = example['cloth'].pred_pos
+        cloth_normals = example['cloth'].normals
 
+        # KNN k=2: first neighbor is self, take second
+        _, nn_idx, _ = knn_points(cloth_next_pos.unsqueeze(0), cloth_next_pos.unsqueeze(0),
+                                  k=2, return_nn=True)
+        nn_idx = nn_idx[0, :, 1]
+
+        nn_pos = cloth_next_pos[nn_idx]
+        nn_normals = cloth_normals[nn_idx]
+        device = cloth_next_pos.device
+
+        distance = ((cloth_next_pos - nn_pos) * nn_normals).sum(dim=-1)
+
+        # Filter mesh-adjacent vertices by Euclidean distance threshold
+        pair_dist = torch.norm(cloth_next_pos - nn_pos, dim=-1)
+        neighbor_mask = pair_dist > self.eps
+
+        interpenetration = torch.maximum(self.eps - distance, torch.FloatTensor([0]).to(device))
+        interpenetration = interpenetration * neighbor_mask.float()
+        loss = interpenetration.pow(3).sum(-1)
+        return loss
+
+    def calc_loss(self, example):
+        external_loss = self._calc_external_loss(example)
+        self_loss = self._calc_self_loss(example)
+        loss = external_loss + self_loss
         return loss
 
     def forward(self, sample):
