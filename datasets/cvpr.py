@@ -10,6 +10,7 @@ import torch
 from torch_geometric.data import HeteroData
 
 from utils.coarse import make_coarse_edges
+from utils.cloth_and_material import VertexNormals
 from utils.common import NodeType, triangles_to_edges, separate_arms, pickle_load
 from utils.datasets import convert_lbs_dict
 from utils.defaults import DEFAULTS
@@ -93,6 +94,7 @@ class Loader:
         self.garment_smpl_model_dict = garment_smpl_model_dict
         self.obstacle_dict = obstacle_dict
         self.mcfg = mcfg
+        self.v_normals_f = VertexNormals()
 
     def _add_noise(self, sample):
 
@@ -344,6 +346,20 @@ class Loader:
         if 'lookup' in cloth_dict:
             lookup = torch.tensor(cloth_dict['lookup']).permute(1, 0, 2)
             hetero_sample['cloth'].lookup = lookup
+
+        # Compute per-vertex normals
+        pos = hetero_sample['cloth'].pos
+        faces = hetero_sample['cloth'].faces_batch.T.unsqueeze(0)
+        if pos.dim() == 2:
+            vn = self.v_normals_f(pos.unsqueeze(0), faces)
+            hetero_sample['cloth'].normals = vn[0]
+        else:
+            N = pos.shape[1]
+            normals_list = []
+            for t in range(N):
+                vn = self.v_normals_f(pos[:, t, :].unsqueeze(0), faces)
+                normals_list.append(vn[0])
+            hetero_sample['cloth'].normals = torch.stack(normals_list, dim=1)
 
         return hetero_sample
 
