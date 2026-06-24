@@ -1,4 +1,4 @@
-# MSAGNet: Multi-Scale Attention Graph Network for Garment Simulation
+# MSAGNet: Multi-Scale Attention Graph Networks for Self-Collision-Aware Garment Dynamics Simulation
 
 > Built upon [HOOD](https://github.com/isantesteban/HOOD) (Grigorev et al., CVPR 2023).
 > Our improvements: attention-based message aggregation, self-collision penalty loss,
