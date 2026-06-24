@@ -140,32 +140,39 @@ Run `Inference.ipynb` with the provided weights, then render with `utils/show.py
 **Model weights:** Pre-trained weights are provided in `trained_models/`,
 including MSAGNet models `cvpr_submission.pth` and `postcvpr.pth`.
 
-**Collision loss:** A modified collision loss with external penetration and
-self-collision penalty terms is implemented in `collision_penalty.py`.
-See commented sections for the self-collision formulation.
+**Collision loss:** A collision loss with external penetration (L_e) and
+self-collision penalty (L_s) terms is implemented in `criterions/postcvpr/collision_penalty.py`
+and `criterions/cvpr/collision_penalty.py`. Normals are precomputed in the dataset pipeline
+(`datasets/postcvpr.py`, `datasets/cvpr.py`).
 
-**Evaluation:** `评价指标.ipynb` provides per-vertex MPVE and collision count
-computation between OBJ meshes.
+**Evaluation:** `评价指标.ipynb` provides a quick demo of per-vertex MPVE and
+collision computation between OBJ meshes. For batch evaluation,
+`scripts/eval_collision.py` (signed-distance collision detection + statistics),
+`scripts/eval_mpve.py` (per-vertex MPVE across rollout sequences), and
+`scripts/compare_baselines.py` (full Table 1 pipeline) are provided.
 
 ## Reproducing results
 
 | Paper result | Corresponding file |
 |---|---|
-| Table 1 (collision metrics) | `评价指标.ipynb` |
-| Table 2 (MPVE) | `评价指标.ipynb` |
+| Table 1 (collision metrics) | `scripts/eval_collision.py`, `scripts/compare_baselines.py` |
+| Table 2 (MPVE) | `scripts/eval_mpve.py` |
+| Quick demo (MPVE + collision) | `评价指标.ipynb` |
 | Fig 4–7 (qualitative) | `Inference.ipynb` + `utils/show.py` |
 | Ablation (Fine15/48) | `configs/cvpr_baselines/` |
 
 **Qualitative results:** Run `Inference.ipynb` with the provided weights,
 then render with `utils/show.py` or Blender.
 
-**Quantitative evaluation:** Use `评价指标.ipynb` to compute per-vertex error
-and collision metrics between generated and reference meshes.
+**Quantitative evaluation:** For a quick check use `评价指标.ipynb`. For batch
+evaluation use `scripts/eval_collision.py` (collision) and `scripts/eval_mpve.py`
+(MPVE), or `scripts/compare_baselines.py` for the full pipeline.
 
 **Ablation baselines:** Configurations in `configs/cvpr_baselines/`.
 
 ## Baidu Netdisk
 
 https://pan.baidu.com/s/1aMCNoQaf6KKxgByDstuM5w  (提取码: 5r9h)
+
 
 
