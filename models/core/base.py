@@ -3,10 +3,11 @@ from collections import defaultdict
 import torch
 from torch import nn
 from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import softmax as pyg_softmax
 
 
 class BaseBlock(MessagePassing):
-    def __init__(self, edge_processor_dict, node_processor_dict):
+    def __init__(self, edge_processor_dict, node_processor_dict, use_attention=False, latent_size=None):
         super().__init__(aggr='add')
 
         edge_processor_dict = {k: v() for k, v in edge_processor_dict.items()}
@@ -20,6 +21,15 @@ class BaseBlock(MessagePassing):
         self.__user_args__ = self.inspector.keys(
             ['message', 'aggregate', 'update']).difference(
             self.special_args)
+
+        self.use_attention = use_attention
+        if use_attention:
+            assert latent_size is not None
+            self.attention_mlp = nn.Sequential(
+                nn.Linear(latent_size, latent_size // 2),
+                nn.ReLU(),
+                nn.Linear(latent_size // 2, 1)
+            )
 
     def forward(self, sample):
         sample = self.propagate(sample)
@@ -42,6 +52,12 @@ class BaseBlock(MessagePassing):
         coll_dict = self._collect(user_args, edge_index,
                                      size, kwargs)
         aggr_kwargs = self.inspector.distribute('aggregate', coll_dict)
+
+        if self.use_attention:
+            scores = self.attention_mlp(edge_features)
+            weights = pyg_softmax(scores, edge_index[1])
+            edge_features = edge_features * weights
+
         node_features = self.aggregate(edge_features, **aggr_kwargs)
         return node_features
 
