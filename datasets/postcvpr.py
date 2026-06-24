@@ -10,6 +10,7 @@ import torch
 from smplx import SMPL
 from torch_geometric.data import HeteroData
 
+from utils.cloth_and_material import VertexNormals
 from utils.coarse import make_coarse_edges
 from utils.common import NodeType, triangles_to_edges, separate_arms, pickle_load
 from utils.datasets import load_garments_dict, make_garment_smpl_dict
@@ -251,6 +252,7 @@ class GarmentBuilder:
 
         self.vertex_builder = VertexBuilder(mcfg)
         self.noise_maker = NoiseMaker(mcfg)
+        self.v_normals_f = VertexNormals()
 
     def make_cloth_verts(self, body_pose: np.ndarray, global_orient: np.ndarray, transl: np.ndarray, betas: np.ndarray,
                          garment_name: str) -> np.ndarray:
@@ -402,6 +404,28 @@ class GarmentBuilder:
 
         return sample
 
+    def add_cloth_normals(self, sample: HeteroData) -> HeteroData:
+        """
+        Add per-vertex normals to `sample['cloth']`, computed from current pos and faces.
+
+        :param sample: HeteroData with cloth.pos [Vx3] or [VxNx3] and cloth.faces_batch [3xF]
+        :return: sample['cloth'].normals [Vx3] or [VxNx3]
+        """
+        pos = sample['cloth'].pos
+        faces = sample['cloth'].faces_batch.T.unsqueeze(0)  # [1, F, 3]
+
+        if pos.dim() == 2:
+            vn = self.v_normals_f(pos.unsqueeze(0), faces)  # [1, V, 3]
+            sample['cloth'].normals = vn[0]
+        else:
+            N = pos.shape[1]
+            normals_list = []
+            for t in range(N):
+                vn = self.v_normals_f(pos[:, t, :].unsqueeze(0), faces)
+                normals_list.append(vn[0])
+            sample['cloth'].normals = torch.stack(normals_list, dim=1)
+        return sample
+
     def make_vertex_level(self, sample: HeteroData, coarse_edges_dict: Dict[int, np.array]) -> HeteroData:
         """
         Add `vertex_level` labels to `sample['cloth']`
@@ -531,6 +555,7 @@ class GarmentBuilder:
         sample = self.noise_maker.add_noise(sample)
         sample = self.add_restpos(sample, sequence_dict, garment_name)
         sample = self.add_faces_and_edges(sample, garment_name)
+        sample = self.add_cloth_normals(sample)
         sample = self.add_coarse(sample, garment_name)
         sample = self.add_button_edges(sample, garment_name)
 
